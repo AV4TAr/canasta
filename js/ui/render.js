@@ -6,13 +6,14 @@ import {
 } from '../engine/rules.js';
 
 export function cardEl(card, { tiny = false, hidden = false, selectable = true } = {}) {
+  const isHidden = hidden || card.hidden === true;
   const el = document.createElement('div');
   el.className = 'card' + (tiny ? ' tiny' : '') +
-    (hidden ? ' back' : '') +
+    (isHidden ? ' back' : '') +
     (isJoker(card) ? ' joker' : '') +
     (RED_SUITS.has(card.suit) ? ' red' : '');
   el.dataset.cardId = card.id;
-  if (hidden) return el;
+  if (isHidden) return el;
   const tl = document.createElement('div');
   tl.className = 'corner';
   tl.textContent = `${cardLabel(card)}${SUIT_GLYPH[card.suit] || ''}`;
@@ -72,6 +73,9 @@ function renderPlayer(state, ui, p) {
   const player = state.players[p];
   const hand = state.hands[p];
   const isViewer = ui.viewerIdx === p;
+  const meHeader = ui.hotSeat ? '' : (isViewer ? ' (vos)' : ' (rival)');
+  document.querySelector(`#player-${p+1} .player-head h2`).textContent =
+    `Jugador ${p+1}${meHeader}`;
 
   // Meta info
   const min = minInitialMeld(player.score);
@@ -116,7 +120,8 @@ function renderPlayer(state, ui, p) {
 }
 
 function bindActions(state, ui) {
-  const myTurn = state.turn === (ui.hotSeat ? state.turn : ui.viewerIdx);
+  const meIdx = ui.hotSeat ? state.turn : ui.viewerIdx;
+  const myTurn = state.turn === meIdx;
   const inDraw = state.phase === 'draw';
   const inPlay = state.phase === 'play';
   document.getElementById('btn-draw-stock').disabled = !(myTurn && inDraw);

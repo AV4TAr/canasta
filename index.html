@@ -2,9 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>Canasta</title>
 <link rel="stylesheet" href="./css/style.css" />
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
 <header class="topbar">
@@ -12,11 +13,11 @@
   <div class="scores">
     <span>P1 <b id="score-p1">0</b></span>
     <span>P2 <b id="score-p2">0</b></span>
-    <span class="muted">objetivo 5000</span>
   </div>
   <div class="actions">
     <button id="btn-new-round" type="button">Nueva mano</button>
-    <button id="btn-new-game" type="button">Nuevo partido</button>
+    <button id="btn-new-game" type="button" class="secondary">Reset</button>
+    <button id="btn-leave" type="button" class="secondary">Salir</button>
   </div>
 </header>
 
@@ -58,17 +59,51 @@
     <div class="hand-actions">
       <button id="btn-draw-stock" type="button">Robar mazo</button>
       <button id="btn-take-discard" type="button">Tomar pozo</button>
-      <button id="btn-meld" type="button">Bajar selección</button>
-      <button id="btn-add-meld" type="button">Agregar a juego…</button>
-      <button id="btn-discard" type="button">Descartar selección</button>
+      <button id="btn-meld" type="button">Bajar</button>
+      <button id="btn-add-meld" type="button">Agregar</button>
+      <button id="btn-discard" type="button">Descartar</button>
       <button id="btn-go-out" type="button">Cortar</button>
     </div>
   </section>
 </main>
 
-<footer class="footer muted">
-  <span>Hot-seat local · P2P se agrega en próximo commit</span>
-</footer>
+<!-- Lobby modal -->
+<div id="lobby" class="lobby" hidden>
+  <div class="lobby-card">
+    <h2>Canasta · 1v1</h2>
+    <p class="muted">Elegí cómo jugar</p>
+
+    <div class="lobby-section">
+      <button id="btn-mode-local" type="button" class="big">Jugar local (mismo dispositivo)</button>
+    </div>
+
+    <div class="lobby-divider"><span>o jugá online (P2P)</span></div>
+
+    <div class="lobby-section">
+      <button id="btn-mode-host" type="button" class="big">Crear partida</button>
+      <div id="room-code-box" class="room-code" hidden>
+        <div class="muted">Compartí este código con tu rival:</div>
+        <div class="code-row">
+          <span id="room-code-show" class="room-code-text">------</span>
+          <button id="btn-copy-code" type="button" class="secondary">Copiar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="lobby-section">
+      <div class="join-row">
+        <input id="code-input" type="text" placeholder="CÓDIGO" maxlength="8"
+               autocomplete="off" autocorrect="off" autocapitalize="characters" />
+        <button id="btn-mode-client" type="button">Unirse</button>
+      </div>
+    </div>
+
+    <div id="lobby-msg" class="lobby-msg"></div>
+    <div class="lobby-foot muted">
+      Sin servidor. Conexión directa entre navegadores vía WebRTC.
+    </div>
+  </div>
+</div>
 
 <script type="module" src="./js/ui/main.js"></script>
 </body>

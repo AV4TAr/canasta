@@ -1,69 +1,129 @@
 :root{
   --bg:#0b3d2e; --felt:#0f5c46; --ink:#f5f3ee; --muted:#a9b9b3;
   --gold:#e7c873; --red:#d23a3a; --black:#1c1c1c;
-  --card-w:56px; --card-h:80px; --radius:6px;
+  --card-w:48px; --card-h:68px; --radius:6px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
-  font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+body.lobby-open{overflow:hidden}
 .muted{color:var(--muted);font-size:12px}
-.topbar{display:flex;align-items:center;gap:24px;padding:8px 16px;
-  background:#082b21;border-bottom:1px solid #06241c}
-.topbar h1{margin:0;font-size:18px;font-weight:600;letter-spacing:.5px}
-.topbar .scores{display:flex;gap:14px}
-.topbar .actions{margin-left:auto;display:flex;gap:8px}
-button{background:#1d6b54;color:var(--ink);border:1px solid #0c4a39;
-  padding:6px 10px;border-radius:4px;cursor:pointer;font:inherit}
-button:hover:not(:disabled){background:#268769}
-button:disabled{opacity:.4;cursor:not-allowed}
 
-#board{display:grid;grid-template-rows:1fr auto 1fr;height:calc(100vh - 80px);
-  padding:8px;gap:8px;background:var(--felt)}
-.player{display:flex;flex-direction:column;gap:6px;padding:8px;
+/* ─── Topbar ─── */
+.topbar{display:flex;align-items:center;gap:12px;padding:6px 10px;
+  background:#082b21;border-bottom:1px solid #06241c;flex-wrap:wrap}
+.topbar h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.5px}
+.topbar .scores{display:flex;gap:10px;font-size:13px}
+.topbar .actions{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+
+button{background:#1d6b54;color:var(--ink);border:1px solid #0c4a39;
+  padding:8px 12px;border-radius:6px;cursor:pointer;font:inherit;
+  min-height:36px;touch-action:manipulation}
+button:hover:not(:disabled){background:#268769}
+button:active:not(:disabled){transform:translateY(1px)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.secondary{background:#143b2e}
+button.secondary:hover:not(:disabled){background:#1d5742}
+button.big{display:block;width:100%;padding:14px;font-size:16px;font-weight:600}
+
+input[type=text]{background:#082b21;color:var(--ink);border:1px solid #1a6b54;
+  padding:10px;border-radius:6px;font:inherit;text-align:center;
+  letter-spacing:3px;text-transform:uppercase}
+
+/* ─── Board ─── */
+#board{display:grid;grid-template-rows:1fr auto 1fr;
+  min-height:calc(100vh - 60px);padding:6px;gap:6px;background:var(--felt)}
+.player{display:flex;flex-direction:column;gap:6px;padding:6px;
   background:#0c4a39;border-radius:8px;min-height:0}
-.player-head{display:flex;align-items:baseline;gap:10px}
-.player-head h2{margin:0;font-size:14px}
-.melds{display:flex;flex-wrap:wrap;gap:8px;min-height:90px;
-  padding:4px;background:#0a3d2f;border-radius:6px}
-.meld{display:flex;align-items:flex-end;gap:2px;padding:4px;
+.player-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.player-head h2{margin:0;font-size:13px}
+.melds{display:flex;flex-wrap:wrap;gap:6px;min-height:60px;
+  padding:4px;background:#0a3d2f;border-radius:6px;overflow:auto}
+.meld{display:flex;align-items:flex-end;gap:1px;padding:3px;
   background:#082b21;border-radius:4px;cursor:pointer}
 .meld.selected{outline:2px solid var(--gold)}
 .meld-label{font-size:10px;color:var(--muted);margin-right:4px;align-self:center}
 .meld.canasta{background:#1a4d3a;box-shadow:0 0 0 1px var(--gold) inset}
 
-.hand{display:flex;flex-wrap:wrap;gap:4px;padding:4px;min-height:var(--card-h)}
-#player-2 .hand .card{cursor:default}
+.hand{display:flex;flex-wrap:wrap;gap:3px;padding:4px;min-height:var(--card-h);
+  overflow:auto}
 
-.hand-actions{display:flex;flex-wrap:wrap;gap:6px;padding-top:4px}
+.hand-actions{display:flex;flex-wrap:wrap;gap:4px;padding-top:4px}
+.hand-actions button{padding:8px 10px;font-size:13px;flex:1 1 30%}
 
-.middle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:6px}
+/* ─── Middle / piles ─── */
+.middle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:4px}
 .pile{position:relative;background:#0a3d2f;border-radius:8px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:120px;cursor:pointer;border:1px dashed #1a6b54}
+  min-height:90px;border:1px dashed #1a6b54}
 .pile-label{font-size:11px;color:var(--muted)}
 .pile-count{font-size:18px;font-weight:600}
 .pile-top{margin-top:4px;min-height:var(--card-h)}
 .pile-frozen{position:absolute;top:6px;right:8px;font-size:10px;
   color:#000;background:var(--gold);padding:2px 6px;border-radius:3px}
-.turn-info{background:#0a3d2f;border-radius:8px;padding:8px;display:flex;
-  flex-direction:column;gap:6px;text-align:center;justify-content:center}
-.turn-info #turn-label{font-size:16px;font-weight:600}
+.turn-info{background:#0a3d2f;border-radius:8px;padding:6px;display:flex;
+  flex-direction:column;gap:4px;text-align:center;justify-content:center}
+.turn-info #turn-label{font-size:14px;font-weight:600}
 .msg{font-size:12px;color:var(--gold);min-height:1em}
 
+/* ─── Cards ─── */
 .card{width:var(--card-w);height:var(--card-h);background:#fafafa;color:var(--black);
   border-radius:var(--radius);position:relative;cursor:pointer;
   box-shadow:0 1px 2px rgba(0,0,0,.4);user-select:none;flex:0 0 auto;
-  display:flex;align-items:center;justify-content:center;font-weight:600}
-.card.selected{transform:translateY(-12px);box-shadow:0 6px 8px rgba(0,0,0,.6)}
+  display:flex;align-items:center;justify-content:center;font-weight:600;
+  transition:transform .08s}
+.card.selected{transform:translateY(-10px);box-shadow:0 6px 8px rgba(0,0,0,.6);
+  outline:2px solid var(--gold)}
 .card.red{color:var(--red)}
-.card .corner{position:absolute;top:3px;left:5px;font-size:11px;line-height:1}
-.card .corner.br{top:auto;left:auto;bottom:3px;right:5px;transform:rotate(180deg)}
-.card .pip{font-size:22px}
+.card .corner{position:absolute;top:2px;left:4px;font-size:10px;line-height:1}
+.card .corner.br{top:auto;left:auto;bottom:2px;right:4px;transform:rotate(180deg)}
+.card .pip{font-size:18px}
 .card.back{background:repeating-linear-gradient(45deg,#1d6b54 0 6px,#0c4a39 6px 12px);
   color:transparent;cursor:default}
 .card.joker{background:linear-gradient(135deg,#fff,#e7c873);color:#5a3a00}
-.card.tiny{width:34px;height:48px;font-size:10px}
-.card.tiny .pip{font-size:14px}
+.card.tiny{width:30px;height:42px;font-size:10px}
+.card.tiny .pip{font-size:13px}
 .card.tiny .corner{font-size:8px}
 
-.footer{padding:6px 16px;background:#082b21;text-align:center}
+.footer{padding:6px 16px;background:#082b21;text-align:center;font-size:12px}
+
+/* ─── Lobby ─── */
+.lobby{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;
+  display:flex;align-items:center;justify-content:center;padding:14px}
+.lobby-card{background:#0c4a39;border:1px solid #1d6b54;border-radius:12px;
+  padding:18px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:12px}
+.lobby-card h2{margin:0;font-size:20px}
+.lobby-section{display:flex;flex-direction:column;gap:8px}
+.lobby-divider{display:flex;align-items:center;gap:10px;color:var(--muted);
+  font-size:12px}
+.lobby-divider::before,.lobby-divider::after{content:'';flex:1;
+  border-top:1px solid #1d6b54}
+.room-code{background:#082b21;border-radius:8px;padding:10px;
+  display:flex;flex-direction:column;gap:6px}
+.code-row{display:flex;gap:8px;align-items:center}
+.room-code-text{font-size:28px;font-weight:700;letter-spacing:6px;
+  color:var(--gold);font-family:ui-monospace,Menlo,monospace;flex:1}
+.join-row{display:flex;gap:8px}
+.join-row input{flex:1;font-size:18px}
+.lobby-msg{min-height:18px;color:var(--gold);font-size:13px;text-align:center}
+.lobby-foot{text-align:center}
+
+/* ─── Mobile ─── */
+@media (max-width:600px){
+  :root{--card-w:42px;--card-h:60px}
+  .topbar h1{font-size:14px}
+  .topbar .scores{font-size:12px;gap:8px}
+  .pile{min-height:74px}
+  .player-head h2{font-size:12px}
+  .hand-actions button{font-size:12px;padding:8px 6px}
+  .meld-label{font-size:9px}
+  .card.tiny{width:24px;height:34px}
+  .card.tiny .pip{font-size:11px}
+}
+@media (min-width:900px){
+  :root{--card-w:60px;--card-h:84px}
+  .pile{min-height:120px}
+  .card.tiny{width:36px;height:50px}
+  .card.tiny .pip{font-size:15px}
+}
