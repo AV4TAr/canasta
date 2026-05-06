@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Canasta</title>
+<link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <h1>Canasta</h1>
+  <div class="scores">
+    <span>P1 <b id="score-p1">0</b></span>
+    <span>P2 <b id="score-p2">0</b></span>
+    <span class="muted">objetivo 5000</span>
+  </div>
+  <div class="actions">
+    <button id="btn-new-round" type="button">Nueva mano</button>
+    <button id="btn-new-game" type="button">Nuevo partido</button>
+  </div>
+</header>
+
+<main id="board">
+  <section class="player" id="player-2">
+    <div class="player-head">
+      <h2>Jugador 2</h2>
+      <span class="meta" id="meta-p2"></span>
+    </div>
+    <div class="melds" id="melds-p2"></div>
+    <div class="hand" id="hand-p2"></div>
+  </section>
+
+  <section class="middle">
+    <div class="pile stock" id="stock">
+      <div class="pile-label">Mazo</div>
+      <div class="pile-count" id="stock-count">0</div>
+    </div>
+    <div class="pile discard" id="discard">
+      <div class="pile-label">Pozo</div>
+      <div class="pile-top" id="discard-top"></div>
+      <div class="pile-count" id="discard-count">0</div>
+      <div class="pile-frozen" id="discard-frozen" hidden>congelado</div>
+    </div>
+    <div class="turn-info">
+      <div id="turn-label">—</div>
+      <div id="phase-label" class="muted">—</div>
+      <div id="message" class="msg"></div>
+    </div>
+  </section>
+
+  <section class="player" id="player-1">
+    <div class="player-head">
+      <h2>Jugador 1</h2>
+      <span class="meta" id="meta-p1"></span>
+    </div>
+    <div class="melds" id="melds-p1"></div>
+    <div class="hand" id="hand-p1"></div>
+    <div class="hand-actions">
+      <button id="btn-draw-stock" type="button">Robar mazo</button>
+      <button id="btn-take-discard" type="button">Tomar pozo</button>
+      <button id="btn-meld" type="button">Bajar selección</button>
+      <button id="btn-add-meld" type="button">Agregar a juego…</button>
+      <button id="btn-discard" type="button">Descartar selección</button>
+      <button id="btn-go-out" type="button">Cortar</button>
+    </div>
+  </section>
+</main>
+
+<footer class="footer muted">
+  <span>Hot-seat local · P2P se agrega en próximo commit</span>
+</footer>
+
+<script type="module" src="./js/ui/main.js"></script>
+</body>
+</html>
