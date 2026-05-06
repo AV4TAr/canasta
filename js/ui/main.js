@@ -36,7 +36,16 @@ const roomCodeBox = document.getElementById('room-code-box');
 
 function showLobby() { lobby.hidden = false; document.body.classList.add('lobby-open'); }
 function hideLobby() { lobby.hidden = true; document.body.classList.remove('lobby-open'); }
-function setLobbyMsg(msg) { lobbyMsg.textContent = msg; }
+function setLobbyMsg(msg, kind = 'info') {
+  lobbyMsg.textContent = msg;
+  lobbyMsg.classList.toggle('error', kind === 'error');
+}
+function buzz() { try { navigator.vibrate?.(60); } catch {} }
+function flashInputError() {
+  codeInput.classList.add('error');
+  setTimeout(() => codeInput.classList.remove('error'), 600);
+  buzz();
+}
 
 document.getElementById('btn-mode-local').addEventListener('click', () => {
   mode = 'local';
@@ -48,14 +57,18 @@ document.getElementById('btn-mode-local').addEventListener('click', () => {
   rerender();
 });
 
-document.getElementById('btn-mode-host').addEventListener('click', async () => {
+document.getElementById('btn-mode-host').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  if (btn.disabled) return;
+  btn.disabled = true;
   setLobbyMsg('Conectando con el broker de PeerJS…');
   try {
+    if (net) { net.destroy(); net = null; }
     net = new HostPeer();
     net.on('clientConnected', onClientConnected);
     net.on('clientDisconnected', () => flash('Rival desconectado. Esperando reconexión…'));
     net.on('intent', onClientIntent);
-    net.on('error', err => setLobbyMsg('Error: ' + (err?.type || err?.message || err)));
+    net.on('error', err => setLobbyMsg('Error: ' + (err?.type || err?.message || err), 'error'));
     const code = await net.start();
     mode = 'host';
     ui.hotSeat = false;
@@ -64,28 +77,41 @@ document.getElementById('btn-mode-host').addEventListener('click', async () => {
     roomCodeShow.textContent = code;
     roomCodeBox.hidden = false;
     setLobbyMsg('Compartí el código y esperá al rival.');
-  } catch (e) {
-    setLobbyMsg('No pude crear la sala: ' + (e?.type || e?.message || e));
+  } catch (err) {
+    setLobbyMsg('No pude crear la sala: ' + (err?.type || err?.message || err), 'error');
+  } finally {
+    btn.disabled = false;
   }
 });
 
-document.getElementById('btn-mode-client').addEventListener('click', async () => {
+document.getElementById('btn-mode-client').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  if (btn.disabled) return;
   const code = (codeInput.value || '').trim().toUpperCase();
-  if (!code || code.length < 4) { setLobbyMsg('Ingresá un código.'); return; }
+  if (!code || code.length < 4) {
+    setLobbyMsg('Escribí primero el código de la sala (ej: K7M2PQ).', 'error');
+    flashInputError();
+    codeInput.focus();
+    return;
+  }
+  btn.disabled = true;
   setLobbyMsg('Conectando a sala ' + code + '…');
   try {
+    if (net) { net.destroy(); net = null; }
     net = new ClientPeer();
     net.on('message', onHostMessage);
     net.on('disconnected', () => flash('Te desconectaste del host.'));
-    net.on('busy', () => setLobbyMsg('La sala ya tiene 2 jugadores.'));
-    net.on('error', err => setLobbyMsg('Error: ' + (err?.type || err?.message || err)));
+    net.on('busy', () => setLobbyMsg('La sala ya tiene 2 jugadores.', 'error'));
+    net.on('error', err => setLobbyMsg('Error: ' + (err?.type || err?.message || err), 'error'));
     await net.connect(code);
     mode = 'client';
     ui.hotSeat = false;
     ui.viewerIdx = 1;
     setLobbyMsg('Conectado. Esperando estado del host…');
-  } catch (e) {
-    setLobbyMsg('No pude conectar: ' + (e?.type || e?.message || e));
+  } catch (err) {
+    setLobbyMsg('No pude conectar: ' + (err?.type || err?.message || err), 'error');
+  } finally {
+    btn.disabled = false;
   }
 });
 
