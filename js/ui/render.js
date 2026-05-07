@@ -5,6 +5,14 @@ import {
   isDiscardFrozen, minInitialMeld, canastaKind,
 } from '../engine/rules.js';
 
+// Handlers que la UI principal registra para acciones del juego.
+let _handlers = {};
+export function setHandlers(h) { _handlers = h; }
+
+// Estado de doble-tap (módulo) — sobrevive a re-renders.
+let _lastTap = { id: null, t: 0 };
+const DOUBLE_TAP_MS = 350;
+
 export function cardEl(card, { tiny = false, hidden = false, selectable = true } = {}) {
   const isHidden = hidden || card.hidden === true;
   const el = document.createElement('div');
@@ -94,6 +102,14 @@ function renderPlayer(state, ui, p) {
     if (showHand) {
       if (ui.selection.has(c.id)) el.classList.add('selected');
       el.addEventListener('click', () => {
+        const now = Date.now();
+        // Doble-tap sobre la misma carta → descartar
+        if (_lastTap.id === c.id && now - _lastTap.t < DOUBLE_TAP_MS) {
+          _lastTap = { id: null, t: 0 };
+          _handlers.onCardDoubleTap?.(c.id);
+          return;
+        }
+        _lastTap = { id: c.id, t: now };
         if (ui.selection.has(c.id)) ui.selection.delete(c.id);
         else ui.selection.add(c.id);
         render(state, ui);

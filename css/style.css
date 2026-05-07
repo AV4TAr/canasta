@@ -57,7 +57,9 @@ input[type=text]{background:#082b21;color:var(--ink);border:1px solid #1a6b54;
 .middle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:4px}
 .pile{position:relative;background:#0a3d2f;border-radius:8px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:90px;border:1px dashed #1a6b54}
+  min-height:90px;border:1px dashed #1a6b54;cursor:pointer;
+  transition:background .1s}
+.pile:active{background:#0e5240}
 .pile-label{font-size:11px;color:var(--muted)}
 .pile-count{font-size:18px;font-weight:600}
 .pile-top{margin-top:4px;min-height:var(--card-h)}

@@ -1,5 +1,5 @@
 import * as G from '../engine/game.js';
-import { render } from './render.js';
+import { render, setHandlers } from './render.js';
 import { HostPeer, ClientPeer } from '../net/peer.js';
 import { sanitizeForClient } from '../net/protocol.js';
 
@@ -317,6 +317,24 @@ document.getElementById('btn-share-link').addEventListener('click', async () => 
       setLobbyMsg(text, 'error');
     }
   }
+});
+
+// ─────────── Gestos: tap mazo / doble-tap descarte ───────────
+document.getElementById('stock').addEventListener('click', () => {
+  if (state.phase !== 'draw') return;
+  dispatch('drawStock');
+});
+document.getElementById('discard').addEventListener('click', () => {
+  if (state.phase !== 'draw') return;
+  dispatch('takeDiscard');
+});
+setHandlers({
+  onCardDoubleTap: (cardId) => {
+    if (state.phase !== 'play') return;
+    // Limpiar selección previa para no interferir con el descarte
+    ui.selection = new Set();
+    dispatch('discard', { cardId });
+  },
 });
 
 // ─────────── Boot ───────────
