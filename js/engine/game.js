@@ -150,14 +150,68 @@ export function takeDiscard(state, playerIdx) {
   const v = canTakeDiscard(state, playerIdx);
   if (!v.ok) return { error: v.error };
 
+  // Snapshot para poder cancelar la toma (siempre que el jugador no haya bajado todavía).
+  state._undoTake = {
+    playerIdx,
+    hand: state.hands[playerIdx].map(c => ({ ...c })),
+    discard: state.discard.map(c => ({ ...c })),
+    redThrees: state.players[playerIdx].redThrees.map(c => ({ ...c })),
+    stockLen: state.stock.length,
+    message: state.message,
+    logLen: state.log.length,
+    pendingTopId: state.pendingTopId,
+    phase: state.phase,
+  };
+
   const top = state.discard[state.discard.length - 1];
   const taken = state.discard.splice(0, state.discard.length);
+  // Marcar las cartas recién tomadas para que el UI las pueda destacar.
+  for (const c of taken) c.justTaken = true;
   state.hands[playerIdx].push(...taken);
   state.pendingTopId = top.id; // el meld que baje a continuación debe incluir esta carta
   autoDrawRedThrees(state, playerIdx);
   state.phase = 'play';
   state.message = `J${playerIdx + 1} tomó el pozo (${taken.length}). Debe bajar un juego con el tope.`;
   state.log.push(`J${playerIdx + 1} toma pozo (${taken.length})`);
+  return { ok: true };
+}
+
+// Cancelar la toma del pozo (solo si no se bajó nada en este turno todavía).
+export function cancelTakeDiscard(state, playerIdx) {
+  if (state.turn !== playerIdx) return { error: 'No es tu turno.' };
+  if (state.phase !== 'play') return { error: 'No podés cancelar ahora.' };
+  if (!state._undoTake || state._undoTake.playerIdx !== playerIdx)
+    return { error: 'No hay toma del pozo para cancelar.' };
+  const player = state.players[playerIdx];
+  if ((player.todayMelds || []).length > 0)
+    return { error: 'Ya bajaste cartas, la toma no se puede cancelar.' };
+
+  const u = state._undoTake;
+  // Devolver las cartas robadas como reposición de 3 rojos al mazo.
+  // Para reconstruir exacto: restauramos hand/discard/redThrees y revertimos
+  // el stock a su largo anterior tomando del fondo. Las cartas que se hayan
+  // robado para reponer 3 rojos vuelven al mazo (al fondo) preservando orden.
+  const stolenForRedThrees = u.stockLen - state.stock.length;
+  // Las cartas tomadas del stock se agregaron al final de la mano del jugador.
+  // Las quitamos de la mano y las devolvemos al mazo, en orden inverso al
+  // que salieron (LIFO ⇒ pop del stock).
+  const hand = state.hands[playerIdx];
+  if (stolenForRedThrees > 0) {
+    const tail = hand.splice(hand.length - stolenForRedThrees, stolenForRedThrees);
+    // tail está en el orden en que se pusheó (último push = última pop del stock).
+    // Para restaurar el stock original (donde el último push fue lo último popeado),
+    // re-pusheamos en orden inverso.
+    while (tail.length) state.stock.push(tail.pop());
+  }
+  state.hands[playerIdx] = u.hand;
+  state.discard = u.discard;
+  state.players[playerIdx].redThrees = u.redThrees;
+  state.message = 'Toma del pozo cancelada.';
+  state.log.length = u.logLen;
+  state.log.push(`J${playerIdx + 1} cancela la toma del pozo`);
+  state.pendingTopId = u.pendingTopId;
+  state.phase = u.phase;
+  state._undoTake = null;
   return { ok: true };
 }
 
@@ -210,6 +264,8 @@ export function meldNew(state, playerIdx, cardIds, { isGoingOut = false } = {}) 
   player.todayMelds = (player.todayMelds || []).concat([meld]);
   if (state.pendingTopId && cardIds.includes(state.pendingTopId)) {
     state.pendingTopId = null;
+    // Toma del pozo confirmada por el meld con el tope: no se puede cancelar.
+    state._undoTake = null;
   }
 
   state.message = `J${playerIdx + 1} bajó ${cards.length} de ${rank}.`;
@@ -264,6 +320,9 @@ export function discard(state, playerIdx, cardId) {
     player.hasMelded = true;
   }
   player.todayMelds = [];
+  // Limpiar marcadores de turno
+  state._undoTake = null;
+  for (const h of state.hands[playerIdx]) delete h.justTaken;
 
   state.log.push(`J${playerIdx + 1} descarta ${cardLabel(c)}`);
 

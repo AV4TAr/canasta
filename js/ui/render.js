@@ -19,7 +19,8 @@ export function cardEl(card, { tiny = false, hidden = false, selectable = true }
   el.className = 'card' + (tiny ? ' tiny' : '') +
     (isHidden ? ' back' : '') +
     (isJoker(card) ? ' joker' : '') +
-    (RED_SUITS.has(card.suit) ? ' red' : '');
+    (RED_SUITS.has(card.suit) ? ' red' : '') +
+    (card.justTaken ? ' just-taken' : '');
   el.dataset.cardId = card.id;
   if (isHidden) return el;
   const tl = document.createElement('div');
@@ -39,6 +40,21 @@ export function cardEl(card, { tiny = false, hidden = false, selectable = true }
 }
 
 export function render(state, ui) {
+  // Layout flip: el jugador activo (hot-seat) o el viewer (P2P) queda abajo.
+  const viewer = ui.hotSeat ? state.turn : ui.viewerIdx;
+  document.body.classList.toggle('flip-players', viewer === 1);
+
+  // Botón "Cancelar toma" visible solo si aplica
+  const cancelBtn = document.getElementById('btn-cancel-take');
+  if (cancelBtn) {
+    const me = ui.hotSeat ? state.turn : ui.viewerIdx;
+    const canCancel = state.phase === 'play'
+      && state.turn === me
+      && !!state.pendingTopId
+      && (state.players[me].todayMelds || []).length === 0;
+    cancelBtn.hidden = !canCancel;
+  }
+
   // Scores
   document.getElementById('score-p1').textContent = state.players[0].score;
   document.getElementById('score-p2').textContent = state.players[1].score;

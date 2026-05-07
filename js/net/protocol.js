@@ -17,7 +17,9 @@ export function sanitizeForClient(state, viewerIdx) {
   const hands = viewerIdx === 0
     ? [state.hands[0], hideHand]
     : [hideHand, state.hands[1]];
-  return { ...state, hands, stock: hideStock };
+  // _undoTake puede contener la mano del host: no enviar.
+  const { _undoTake, ...rest } = state;
+  return { ...rest, hands, stock: hideStock };
 }
 
 function makeHidden(id) {

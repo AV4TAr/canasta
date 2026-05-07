@@ -2,6 +2,7 @@ import * as G from '../engine/game.js';
 import { render, setHandlers } from './render.js';
 import { HostPeer, ClientPeer } from '../net/peer.js';
 import { sanitizeForClient } from '../net/protocol.js';
+import { logEvent, downloadLog } from '../util/log.js';
 
 // ─────────── Estado UI / modo ───────────
 const ui = {
@@ -73,6 +74,7 @@ function flashInputError() {
 }
 
 document.getElementById('btn-mode-local').addEventListener('click', () => {
+  logEvent('mode.local');
   mode = 'local';
   ui.hotSeat = true;
   state = G.newGame({ targetScore: 5000 });
@@ -90,11 +92,12 @@ document.getElementById('btn-mode-host').addEventListener('click', async (e) => 
   try {
     if (net) { net.destroy(); net = null; }
     net = new HostPeer();
-    net.on('clientConnected', onClientConnected);
-    net.on('clientDisconnected', () => flash('Rival desconectado. Esperando reconexión…'));
-    net.on('intent', onClientIntent);
-    net.on('error', err => setLobbyMsg('Error: ' + (err?.type || err?.message || err), 'error'));
+    net.on('clientConnected', () => { logEvent('net.host.clientConnected'); onClientConnected(); });
+    net.on('clientDisconnected', () => { logEvent('net.host.clientDisconnected'); flash('Rival desconectado. Esperando reconexión…'); });
+    net.on('intent', m => { logEvent('net.host.intent', m); onClientIntent(m); });
+    net.on('error', err => { logEvent('net.host.error', { type: err?.type, message: err?.message }); setLobbyMsg('Error: ' + (err?.type || err?.message || err), 'error'); });
     const code = await net.start();
+    logEvent('net.host.started', { code });
     mode = 'host';
     ui.hotSeat = false;
     ui.viewerIdx = 0;
@@ -124,11 +127,12 @@ document.getElementById('btn-mode-client').addEventListener('click', async (e) =
   try {
     if (net) { net.destroy(); net = null; }
     net = new ClientPeer();
-    net.on('message', onHostMessage);
-    net.on('disconnected', () => flash('Te desconectaste del host.'));
-    net.on('busy', () => setLobbyMsg('La sala ya tiene 2 jugadores.', 'error'));
-    net.on('error', err => setLobbyMsg('Error: ' + (err?.type || err?.message || err), 'error'));
+    net.on('message', m => { logEvent('net.client.message', { type: m?.type }); onHostMessage(m); });
+    net.on('disconnected', () => { logEvent('net.client.disconnected'); flash('Te desconectaste del host.'); });
+    net.on('busy', () => { logEvent('net.client.busy'); setLobbyMsg('La sala ya tiene 2 jugadores.', 'error'); });
+    net.on('error', err => { logEvent('net.client.error', { type: err?.type, message: err?.message }); setLobbyMsg('Error: ' + (err?.type || err?.message || err), 'error'); });
     await net.connect(code);
+    logEvent('net.client.connected', { code });
     mode = 'client';
     ui.hotSeat = false;
     ui.viewerIdx = 1;
@@ -198,19 +202,21 @@ function onHostMessage(msg) {
 // ─────────── Aplicar acción según modo ───────────
 function applyAction(action, playerIdx, payload) {
   switch (action) {
-    case 'newRound':     state = G.newRound(state); return { ok: true };
-    case 'drawStock':    return G.drawStock(state, playerIdx);
-    case 'takeDiscard':  return G.takeDiscard(state, playerIdx);
-    case 'meldNew':      return G.meldNew(state, playerIdx, payload.cardIds);
-    case 'meldAdd':      return G.meldAdd(state, playerIdx, payload.meldId, payload.cardIds);
-    case 'discard':      return G.discard(state, playerIdx, payload.cardId);
-    case 'goOut':        return G.goOut(state, playerIdx, payload.lastDiscardCardId);
-    default:             return { error: 'Acción desconocida: ' + action };
+    case 'newRound':         state = G.newRound(state); return { ok: true };
+    case 'drawStock':        return G.drawStock(state, playerIdx);
+    case 'takeDiscard':      return G.takeDiscard(state, playerIdx);
+    case 'cancelTakeDiscard':return G.cancelTakeDiscard(state, playerIdx);
+    case 'meldNew':          return G.meldNew(state, playerIdx, payload.cardIds);
+    case 'meldAdd':          return G.meldAdd(state, playerIdx, payload.meldId, payload.cardIds);
+    case 'discard':          return G.discard(state, playerIdx, payload.cardId);
+    case 'goOut':            return G.goOut(state, playerIdx, payload.lastDiscardCardId);
+    default:                 return { error: 'Acción desconocida: ' + action };
   }
 }
 
 // dispatch desde la UI: en local/host ejecuta, en client envía intent.
 function dispatch(action, payload = {}) {
+  logEvent('dispatch', { mode, action, payload });
   if (mode === 'client') {
     net?.send({ type: 'INTENT', action, payload });
     clearSelection();
@@ -219,7 +225,11 @@ function dispatch(action, payload = {}) {
   const prevTurn = state.turn;
   const playerIdx = mode === 'host' ? 0 : state.turn; // host = J1 (idx 0); local = jugador del turno
   const r = applyAction(action, playerIdx, payload);
-  if (r?.error) return flash(r.error);
+  if (r?.error) {
+    logEvent('action.error', { action, error: r.error });
+    return flash(r.error);
+  }
+  logEvent('action.ok', { action, turn: state.turn, phase: state.phase });
   if (mode === 'host') broadcastState();
   clearSelection();
   if (action === 'newRound' && mode === 'local') {
@@ -271,6 +281,20 @@ document.getElementById('btn-go-out').addEventListener('click', () => {
   const lastDiscardCardId = ids.length === 1 ? ids[0] : null;
   dispatch('goOut', { lastDiscardCardId });
 });
+document.getElementById('btn-cancel-take').addEventListener('click', () => {
+  dispatch('cancelTakeDiscard');
+});
+document.getElementById('btn-log').addEventListener('click', () => {
+  downloadLog({
+    mode,
+    turn: state.turn,
+    phase: state.phase,
+    handsLen: state.hands.map(h => h.length),
+    stockLen: state.stock.length,
+    discardLen: state.discard.length,
+    pendingTopId: state.pendingTopId || null,
+  });
+});
 
 // ─────────── Compartir / link de invitación ───────────
 function shareLink(code) {
@@ -319,14 +343,29 @@ document.getElementById('btn-share-link').addEventListener('click', async () => 
   }
 });
 
-// ─────────── Gestos: tap mazo / doble-tap descarte ───────────
+// ─────────── Gestos: tap mazo / tap pozo / doble-tap descarte ───────────
 document.getElementById('stock').addEventListener('click', () => {
   if (state.phase !== 'draw') return;
   dispatch('drawStock');
 });
 document.getElementById('discard').addEventListener('click', () => {
-  if (state.phase !== 'draw') return;
-  dispatch('takeDiscard');
+  // En fase 'draw' → tomar pozo. En 'play' con 1 carta seleccionada → descartar esa carta.
+  if (state.phase === 'draw') {
+    dispatch('takeDiscard');
+    return;
+  }
+  if (state.phase === 'play') {
+    const ids = selectedIds();
+    if (ids.length === 1) {
+      const cardId = ids[0];
+      ui.selection = new Set();
+      dispatch('discard', { cardId });
+    } else if (ids.length === 0) {
+      flash('Seleccioná una carta primero, después tocá el pozo para descartar.');
+    } else {
+      flash('Para descartar tocando el pozo, dejá solo 1 carta seleccionada.');
+    }
+  }
 });
 setHandlers({
   onCardDoubleTap: (cardId) => {

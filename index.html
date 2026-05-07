@@ -17,6 +17,7 @@
   <div class="actions">
     <button id="btn-new-round" type="button">Nueva mano</button>
     <button id="btn-new-game" type="button" class="secondary">Reset</button>
+    <button id="btn-log" type="button" class="secondary" title="Descargar log">Log</button>
     <button id="btn-leave" type="button" class="secondary">Salir</button>
   </div>
 </header>
@@ -56,16 +57,18 @@
     </div>
     <div class="melds" id="melds-p1"></div>
     <div class="hand" id="hand-p1"></div>
-    <div class="hand-actions">
-      <button id="btn-draw-stock" type="button">Robar mazo</button>
-      <button id="btn-take-discard" type="button">Tomar pozo</button>
-      <button id="btn-meld" type="button">Bajar</button>
-      <button id="btn-add-meld" type="button">Agregar</button>
-      <button id="btn-discard" type="button">Descartar</button>
-      <button id="btn-go-out" type="button">Cortar</button>
-    </div>
   </section>
 </main>
+
+<footer class="hand-actions">
+  <button id="btn-draw-stock" type="button">Robar mazo</button>
+  <button id="btn-take-discard" type="button">Tomar pozo</button>
+  <button id="btn-cancel-take" type="button" class="warn" hidden>Cancelar toma</button>
+  <button id="btn-meld" type="button">Bajar</button>
+  <button id="btn-add-meld" type="button">Agregar</button>
+  <button id="btn-discard" type="button">Descartar</button>
+  <button id="btn-go-out" type="button">Cortar</button>
+</footer>
 
 <!-- Pass-the-device screen (modo local) -->
 <div id="pass-screen" class="pass" hidden>

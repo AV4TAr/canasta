@@ -34,7 +34,14 @@ input[type=text]{background:#082b21;color:var(--ink);border:1px solid #1a6b54;
 
 /* ─── Board ─── */
 #board{display:grid;grid-template-rows:1fr auto 1fr;
-  min-height:calc(100vh - 60px);padding:6px;gap:6px;background:var(--felt)}
+  min-height:calc(100vh - 60px - 56px);padding:6px;gap:6px;background:var(--felt)}
+/* Slots: J2 arriba (default), middle al medio, J1 abajo. */
+#player-2{grid-row:1}
+.middle{grid-row:2}
+#player-1{grid-row:3}
+/* Flip: el jugador del turno (o el viewer en P2P) queda siempre abajo. */
+body.flip-players #player-2{grid-row:3}
+body.flip-players #player-1{grid-row:1}
 .player{display:flex;flex-direction:column;gap:6px;padding:6px;
   background:#0c4a39;border-radius:8px;min-height:0}
 .player-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -50,8 +57,13 @@ input[type=text]{background:#082b21;color:var(--ink);border:1px solid #1a6b54;
 .hand{display:flex;flex-wrap:wrap;gap:3px;padding:4px;min-height:var(--card-h);
   overflow:auto}
 
-.hand-actions{display:flex;flex-wrap:wrap;gap:4px;padding-top:4px}
-.hand-actions button{padding:8px 10px;font-size:13px;flex:1 1 30%}
+/* Acciones sticky abajo (siempre cerca del jugador activo) */
+.hand-actions{position:sticky;bottom:0;left:0;right:0;
+  display:flex;flex-wrap:wrap;gap:4px;padding:6px;
+  background:#082b21;border-top:1px solid #06241c;z-index:10}
+.hand-actions button{padding:10px 10px;font-size:13px;flex:1 1 30%;min-height:42px}
+.hand-actions button.warn{background:#a14a1f;border-color:#642d11}
+.hand-actions button.warn:hover:not(:disabled){background:#c25c2a}
 
 /* ─── Middle / piles ─── */
 .middle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:4px}
@@ -78,6 +90,8 @@ input[type=text]{background:#082b21;color:var(--ink);border:1px solid #1a6b54;
   transition:transform .08s}
 .card.selected{transform:translateY(-10px);box-shadow:0 6px 8px rgba(0,0,0,.6);
   outline:2px solid var(--gold)}
+.card.just-taken{outline:2px solid #f0a500;
+  box-shadow:0 0 8px #f0a500cc, 0 1px 2px rgba(0,0,0,.4)}
 .card.red{color:var(--red)}
 .card .corner{position:absolute;top:2px;left:4px;font-size:10px;line-height:1}
 .card .corner.br{top:auto;left:auto;bottom:2px;right:4px;transform:rotate(180deg)}
