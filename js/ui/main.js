@@ -9,6 +9,7 @@ const ui = {
   viewerIdx: 0,
   selection: new Set(),
   selectedMeldId: null,
+  pendingPass: false, // pass screen activa (hot-seat)
 };
 
 let mode = 'menu';      // 'menu' | 'local' | 'host' | 'client'
@@ -41,6 +42,30 @@ function setLobbyMsg(msg, kind = 'info') {
   lobbyMsg.classList.toggle('error', kind === 'error');
 }
 function buzz() { try { navigator.vibrate?.(60); } catch {} }
+
+// ─────────── Pass screen (hot-seat) ───────────
+const passScreen = document.getElementById('pass-screen');
+const passTitle = document.getElementById('pass-title');
+function showPassScreen(playerIdx) {
+  ui.pendingPass = true;
+  passTitle.textContent = `Jugador ${playerIdx + 1}`;
+  passScreen.hidden = false;
+  rerender();
+}
+function hidePassScreen() {
+  ui.pendingPass = false;
+  passScreen.hidden = true;
+  rerender();
+}
+document.getElementById('btn-pass-ready').addEventListener('click', hidePassScreen);
+
+// Si en local cambia el turno, mostramos pantalla de pase.
+function maybePass(prevTurn) {
+  if (mode !== 'local') return;
+  if (state.phase !== 'draw' && state.phase !== 'play') return;
+  if (state.turn === prevTurn) return;
+  showPassScreen(state.turn);
+}
 function flashInputError() {
   codeInput.classList.add('error');
   setTimeout(() => codeInput.classList.remove('error'), 600);
@@ -54,7 +79,7 @@ document.getElementById('btn-mode-local').addEventListener('click', () => {
   state = G.newRound(state);
   clearSelection();
   hideLobby();
-  rerender();
+  showPassScreen(state.turn);
 });
 
 document.getElementById('btn-mode-host').addEventListener('click', async (e) => {
@@ -191,11 +216,17 @@ function dispatch(action, payload = {}) {
     clearSelection();
     return;
   }
+  const prevTurn = state.turn;
   const playerIdx = mode === 'host' ? 0 : state.turn; // host = J1 (idx 0); local = jugador del turno
   const r = applyAction(action, playerIdx, payload);
   if (r?.error) return flash(r.error);
   if (mode === 'host') broadcastState();
   clearSelection();
+  if (action === 'newRound' && mode === 'local') {
+    showPassScreen(state.turn);
+    return;
+  }
+  maybePass(prevTurn);
   rerender();
 }
 
@@ -241,16 +272,66 @@ document.getElementById('btn-go-out').addEventListener('click', () => {
   dispatch('goOut', { lastDiscardCardId });
 });
 
-// Botón "copiar código"
+// ─────────── Compartir / link de invitación ───────────
+function shareLink(code) {
+  const u = new URL(window.location.href);
+  u.search = ''; u.hash = '';
+  u.searchParams.set('room', code);
+  return u.toString();
+}
+
 document.getElementById('btn-copy-code').addEventListener('click', async () => {
   try {
     await navigator.clipboard.writeText(roomCodeShow.textContent.trim());
     setLobbyMsg('Código copiado.');
   } catch {
-    setLobbyMsg('No pude copiar — copialo a mano.');
+    setLobbyMsg('No pude copiar — copialo a mano.', 'error');
+  }
+});
+
+document.getElementById('btn-copy-link').addEventListener('click', async () => {
+  const code = roomCodeShow.textContent.trim();
+  if (!code || code === '------') return;
+  const link = shareLink(code);
+  try {
+    await navigator.clipboard.writeText(link);
+    setLobbyMsg('Link copiado: ' + link);
+  } catch {
+    setLobbyMsg(link, 'error');
+  }
+});
+
+document.getElementById('btn-share-link').addEventListener('click', async () => {
+  const code = roomCodeShow.textContent.trim();
+  if (!code || code === '------') return;
+  const link = shareLink(code);
+  const text = `Te invito a jugar Canasta. Código: ${code}\n${link}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Canasta', text, url: link }); }
+    catch { /* user cancelled */ }
+  } else {
+    try {
+      await navigator.clipboard.writeText(text);
+      setLobbyMsg('Compartido al portapapeles. Pegalo en WhatsApp.');
+    } catch {
+      setLobbyMsg(text, 'error');
+    }
   }
 });
 
 // ─────────── Boot ───────────
 showLobby();
 rerender();
+
+// Si llegan con ?room=XXX en la URL, prellenar y auto-unirse
+(function autoJoinFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const code = (params.get('room') || '').trim().toUpperCase();
+    if (!code || code.length < 4) return;
+    codeInput.value = code;
+    setLobbyMsg('Sala detectada en el link. Tocá "Unirse" para conectarte.');
+    // Auto-conectar después de un tick (que se hidrate todo primero)
+    setTimeout(() => document.getElementById('btn-mode-client').click(), 200);
+  } catch {}
+})();

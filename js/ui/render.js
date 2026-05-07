@@ -1,5 +1,5 @@
 import {
-  RED_SUITS, SUIT_GLYPH, isWild, isJoker, isRedThree, cardLabel,
+  RED_SUITS, SUIT_GLYPH, isWild, isJoker, isRedThree, cardLabel, sortHand,
 } from '../engine/cards.js';
 import {
   isDiscardFrozen, minInitialMeld, canastaKind,
@@ -86,8 +86,10 @@ function renderPlayer(state, ui, p) {
   `;
 
   // Render mano (visible solo si es el jugador del turno o si viewerIdx coincide)
-  const showHand = ui.hotSeat ? state.turn === p : isViewer;
-  for (const c of hand) {
+  // En hot-seat, durante un "pass" todas las manos quedan ocultas hasta el tap.
+  const showHand = (ui.hotSeat ? state.turn === p : isViewer) && !ui.pendingPass;
+  const ordered = showHand ? sortHand(hand) : hand;
+  for (const c of ordered) {
     const el = cardEl(c, { hidden: !showHand });
     if (showHand) {
       if (ui.selection.has(c.id)) el.classList.add('selected');
@@ -121,7 +123,7 @@ function renderPlayer(state, ui, p) {
 
 function bindActions(state, ui) {
   const meIdx = ui.hotSeat ? state.turn : ui.viewerIdx;
-  const myTurn = state.turn === meIdx;
+  const myTurn = state.turn === meIdx && !ui.pendingPass;
   const inDraw = state.phase === 'draw';
   const inPlay = state.phase === 'play';
   document.getElementById('btn-draw-stock').disabled = !(myTurn && inDraw);

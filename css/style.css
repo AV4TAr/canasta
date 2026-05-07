@@ -89,6 +89,15 @@ input[type=text]{background:#082b21;color:var(--ink);border:1px solid #1a6b54;
 
 .footer{padding:6px 16px;background:#082b21;text-align:center;font-size:12px}
 
+/* ─── Pass screen (hot-seat) ─── */
+.pass{position:fixed;inset:0;background:#06241c;z-index:90;
+  display:flex;align-items:center;justify-content:center;padding:20px}
+.pass-card{background:#0c4a39;border:1px solid #1d6b54;border-radius:12px;
+  padding:24px;max-width:380px;width:100%;text-align:center;
+  display:flex;flex-direction:column;gap:14px}
+.pass-card h2{margin:0;font-size:32px;color:var(--gold);letter-spacing:1px}
+.pass-card .muted{font-size:14px}
+
 /* ─── Lobby ─── */
 .lobby{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;
   display:flex;align-items:center;justify-content:center;padding:14px}
@@ -103,6 +112,8 @@ input[type=text]{background:#082b21;color:var(--ink);border:1px solid #1a6b54;
 .room-code{background:#082b21;border-radius:8px;padding:10px;
   display:flex;flex-direction:column;gap:6px}
 .code-row{display:flex;gap:8px;align-items:center}
+.share-row{display:flex;gap:6px}
+.share-row button{flex:1;font-size:13px;padding:8px}
 .room-code-text{font-size:28px;font-weight:700;letter-spacing:6px;
   color:var(--gold);font-family:ui-monospace,Menlo,monospace;flex:1}
 .join-row{display:flex;gap:8px}

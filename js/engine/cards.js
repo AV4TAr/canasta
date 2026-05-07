@@ -27,3 +27,16 @@ export function cardLabel(card) {
   if (isJoker(card)) return 'JK';
   return card.rank;
 }
+
+// Orden visual de la mano: comodines primero (Joker, 2), luego A→3 descendente.
+// Dentro del mismo rank: ♥ ♦ ♣ ♠ para que pares del mismo color queden juntos.
+const RANK_ORDER = { JOKER:0, '2':1, A:2, K:3, Q:4, J:5, '10':6,
+  '9':7, '8':8, '7':9, '6':10, '5':11, '4':12, '3':13 };
+const SUIT_ORDER = { hearts:0, diamonds:1, clubs:2, spades:3, joker:4 };
+export function sortHand(hand) {
+  return [...hand].sort((a, b) => {
+    const r = (RANK_ORDER[a.rank] ?? 99) - (RANK_ORDER[b.rank] ?? 99);
+    if (r !== 0) return r;
+    return (SUIT_ORDER[a.suit] ?? 99) - (SUIT_ORDER[b.suit] ?? 99);
+  });
+}

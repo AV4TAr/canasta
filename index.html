@@ -67,6 +67,16 @@
   </section>
 </main>
 
+<!-- Pass-the-device screen (modo local) -->
+<div id="pass-screen" class="pass" hidden>
+  <div class="pass-card">
+    <div class="muted">Pasale el dispositivo a</div>
+    <h2 id="pass-title">Jugador X</h2>
+    <p class="muted">Cuando estés listo, tocá para ver tus cartas.</p>
+    <button id="btn-pass-ready" type="button" class="big">Estoy listo, ver mis cartas</button>
+  </div>
+</div>
+
 <!-- Lobby modal -->
 <div id="lobby" class="lobby" hidden>
   <div class="lobby-card">
@@ -86,6 +96,10 @@
         <div class="code-row">
           <span id="room-code-show" class="room-code-text">------</span>
           <button id="btn-copy-code" type="button" class="secondary">Copiar</button>
+        </div>
+        <div class="share-row">
+          <button id="btn-share-link" type="button" class="secondary">Compartir link</button>
+          <button id="btn-copy-link" type="button" class="secondary">Copiar link</button>
         </div>
       </div>
     </div>
