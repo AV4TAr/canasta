@@ -3,6 +3,7 @@ import { render, setHandlers } from './render.js';
 import { HostPeer, ClientPeer } from '../net/peer.js';
 import { sanitizeForClient } from '../net/protocol.js';
 import { logEvent, downloadLog } from '../util/log.js';
+import { saveLocal, loadLocal, clearLocal, describeSave } from '../util/storage.js';
 
 // ─────────── Estado UI / modo ───────────
 const ui = {
@@ -79,10 +80,41 @@ document.getElementById('btn-mode-local').addEventListener('click', () => {
   ui.hotSeat = true;
   state = G.newGame({ targetScore: 5000 });
   state = G.newRound(state);
+  saveLocal(state);
   clearSelection();
   hideLobby();
   showPassScreen(state.turn);
 });
+
+document.getElementById('btn-resume-local').addEventListener('click', () => {
+  const saved = loadLocal();
+  if (!saved) return;
+  logEvent('mode.local.resume', { savedAt: saved.savedAt });
+  mode = 'local';
+  ui.hotSeat = true;
+  state = saved.state;
+  clearSelection();
+  hideLobby();
+  if (state.phase === 'draw' || state.phase === 'play') {
+    showPassScreen(state.turn);
+  } else {
+    rerender();
+  }
+});
+
+function refreshResumeUI() {
+  const saved = loadLocal();
+  const btn = document.getElementById('btn-resume-local');
+  const info = document.getElementById('resume-info');
+  if (!saved) {
+    btn.hidden = true;
+    info.hidden = true;
+    return;
+  }
+  btn.hidden = false;
+  info.hidden = false;
+  info.textContent = describeSave(saved);
+}
 
 document.getElementById('btn-mode-host').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
@@ -145,13 +177,18 @@ document.getElementById('btn-mode-client').addEventListener('click', async (e) =
 });
 
 document.getElementById('btn-leave').addEventListener('click', () => {
-  if (!confirm('¿Salir de la sala / partida?')) return;
+  const wasLocal = mode === 'local';
+  const msg = wasLocal
+    ? '¿Salir? Tu partida local quedará guardada y podés continuarla luego.'
+    : '¿Salir de la sala?';
+  if (!confirm(msg)) return;
   if (net) { net.destroy(); net = null; }
   mode = 'menu';
   state = G.newGame({ targetScore: 5000 });
   roomCodeBox.hidden = true;
   codeInput.value = '';
   setLobbyMsg('');
+  refreshResumeUI();
   showLobby();
   rerender();
 });
@@ -231,6 +268,7 @@ function dispatch(action, payload = {}) {
   }
   logEvent('action.ok', { action, turn: state.turn, phase: state.phase });
   if (mode === 'host') broadcastState();
+  if (mode === 'local') saveLocal(state);
   clearSelection();
   if (action === 'newRound' && mode === 'local') {
     showPassScreen(state.turn);
@@ -254,6 +292,7 @@ document.getElementById('btn-new-game').addEventListener('click', () => {
   if (!confirm('¿Empezar un nuevo partido (resetear puntaje)?')) return;
   state = G.newGame({ targetScore: 5000 });
   if (mode === 'host') broadcastState();
+  if (mode === 'local') clearLocal();
   clearSelection();
   rerender();
 });
@@ -377,6 +416,7 @@ setHandlers({
 });
 
 // ─────────── Boot ───────────
+refreshResumeUI();
 showLobby();
 rerender();
 
